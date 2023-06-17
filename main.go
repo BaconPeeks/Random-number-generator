@@ -4,51 +4,84 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
 func main() {
-	fmt.Printf("Welcome to bacon's random number generator!\n")
-	var inputFirst string
-	fmt.Scanln(&inputFirst)
-	if inputFirst == "Number" {
-		numberGenerator()
-	} else if inputFirst == "Kill" {
-		killScript()
+	fmt.Println("Welcome to Bacon's Random Number Generator!")
+	for {
+		fmt.Println("Choose an option:")
+		fmt.Println("1. Generate a random number")
+		fmt.Println("2. Exit the script")
+
+		var choice int
+		_, err := fmt.Scanln(&choice)
+		if err != nil {
+			fmt.Println("Invalid input. Please try again.")
+			continue
+		}
+
+		switch choice {
+		case 1:
+			numberGenerator()
+		case 2:
+			fmt.Println("Script exited successfully!")
+			return
+		default:
+			fmt.Println("Invalid option. Please try again.")
+		}
 	}
 }
 
 func numberGenerator() {
-	fmt.Println("Please enter a number and the generator will generate a random from 0 to your number:")
+	fmt.Println("Please enter a number. The generator will generate a random number from 0 to your number:")
+
 	var random int
-	fmt.Scanln(&random)
-	fmt.Printf("Here is your random number:\n")
+	_, err := fmt.Scanln(&random)
+	if err != nil {
+		fmt.Println("Invalid input. Please try again.")
+		return
+	}
+
+	fmt.Println("Here is your random number:")
 	time.Sleep(1 * time.Second)
+
 	rand.Seed(time.Now().UnixNano())
 	fmt.Println(rand.Intn(random))
 	time.Sleep(1 * time.Second)
-	fmt.Println("Would you like to play again?\n" + "If so please type Y or N to continue.")
-	var playAgain string
-	fmt.Scanln(&playAgain)
-	if playAgain == "Y" {
-		numberGenerator()
-	} else if playAgain == "N" {
-		main()
+
+	for {
+		fmt.Println("Would you like to play again? (Y/N)")
+
+		var playAgain string
+		_, err := fmt.Scanln(&playAgain)
+		if err != nil {
+			fmt.Println("Invalid input. Please try again.")
+			continue
+		}
+
+		if playAgain == "Y" {
+			break
+		} else if playAgain == "N" {
+			return
+		} else {
+			fmt.Println("Invalid input. Please try again.")
+		}
 	}
 }
 
-func killScript() {
-	var input string
-	fmt.Println("Would you like to exit the script?")
-	fmt.Scanln(&input)
-	if input == "Y" {
-		killGame()
-	} else {
-		main()
-	}
+func setupSignalHandler() {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		fmt.Println("Script interrupted!")
+		os.Exit(0)
+	}()
 }
 
-func killGame() {
-	fmt.Println("Script exited successfully!")
-	os.Exit(1)
+func init() {
+	setupSignalHandler()
 }
